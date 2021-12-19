@@ -14,7 +14,7 @@ public class BenchData {
 
     private List<Long> responsesMs;
 
-    private Map<String, Integer> statuses;
+    private Map<String, Long> statuses;
 
     public BenchData() {
         this.responsesMs = new LinkedList<>();
@@ -29,7 +29,7 @@ public class BenchData {
         if (statuses.containsKey(status)) {
             statuses.put(status, statuses.get(status) + 1);
         } else {
-            statuses.put(status, 1);
+            statuses.put(status, 1L);
         }
     }
 }

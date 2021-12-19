@@ -55,6 +55,7 @@ public class BenchCallable implements Callable<BenchData> {
             }
         } catch (Exception e) {
             log.error("Unexpected bench error", e);
+            Thread.currentThread().interrupt();
         }
 
         return benchData;

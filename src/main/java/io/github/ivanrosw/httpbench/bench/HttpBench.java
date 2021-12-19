@@ -9,9 +9,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.message.BasicHeader;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
@@ -20,6 +18,14 @@ import java.util.concurrent.FutureTask;
 @AllArgsConstructor
 public class HttpBench {
 
+    private static final String LINE_DELIMITER = "---------------------------------------";
+
+    private static final String STATUS_2XX = "2xx";
+    private static final String STATUS_OTHER = "other";
+
+    private static final String PERCENTILE_FORMAT = "%-10s | %-11s";
+    private static final String STATUS_FORMAT = "%-10s";
+
     private Arguments arguments;
 
     public void execute() {
@@ -27,7 +33,7 @@ public class HttpBench {
         log.info("Settings: \n{}\n", arguments);
 
         List<BenchData> benchData = runBench();
-        calculatePercentile(benchData);
+        printBenchResult(benchData);
     }
 
     private List<BenchData> runBench() {
@@ -56,17 +62,9 @@ public class HttpBench {
             for (FutureTask<BenchData> futureTask : tasks) {
                 result.add(futureTask.get());
             }
-
-            int requests = 0;
-            for (BenchData data : result) {
-                requests += data.getResponsesMs().size();
-            }
-
-            //todo remove log
-            log.info(result.get(0).toString());
-            log.info(String.valueOf(requests));
         } catch (Exception e) {
             log.error("Error while executing bench", e);
+            Thread.currentThread().interrupt();
         }
 
         executorService.shutdown();
@@ -94,7 +92,81 @@ public class HttpBench {
                 .build();
     }
 
-    private void calculatePercentile(List<BenchData> benchData) {
+    private void printBenchResult(List<BenchData> benchData) {
+        List<Long> responsesMs = new LinkedList<>();
+        benchData.forEach(data -> responsesMs.addAll(data.getResponsesMs()));
+        Collections.sort(responsesMs);
 
+        long avg = getAvg(responsesMs);
+        long percentile10 = getPercentile(responsesMs, 10);
+        long percentile25 = getPercentile(responsesMs, 25);
+        long percentile50 = getPercentile(responsesMs, 50);
+        long percentile75 = getPercentile(responsesMs, 75);
+        long percentile90 = getPercentile(responsesMs, 90);
+        long percentile95 = getPercentile(responsesMs, 95);
+        long percentile99 = getPercentile(responsesMs, 99);
+
+        Map<String, Long> statuses = calculateStatuses(benchData);
+
+        log.info(LINE_DELIMITER);
+        log.info("AVG: {} ms, MIN: {} ms, MAX: {} ms", avg, responsesMs.get(0), responsesMs.get(responsesMs.size() - 1));
+        log.info("2xx: {}, other: {}", statuses.get(STATUS_2XX), statuses.get(STATUS_OTHER) );
+        log.info(LINE_DELIMITER);
+        log.info(String.format(PERCENTILE_FORMAT, "Percentile", "Response ms"));
+        log.info(String.format(PERCENTILE_FORMAT, 10, percentile10));
+        log.info(String.format(PERCENTILE_FORMAT, 25, percentile25));
+        log.info(String.format(PERCENTILE_FORMAT, 50, percentile50));
+        log.info(String.format(PERCENTILE_FORMAT, 75, percentile75));
+        log.info(String.format(PERCENTILE_FORMAT, 90, percentile90));
+        log.info(String.format(PERCENTILE_FORMAT, 95, percentile95));
+        log.info(String.format(PERCENTILE_FORMAT, 99, percentile99));
+        log.info(LINE_DELIMITER);
+        log.info("{} | Count", String.format(STATUS_FORMAT, "Status"));
+        for (Map.Entry<String, Long> entry : statuses.entrySet()) {
+            if (!entry.getKey().equals(STATUS_2XX) && !entry.getKey().equals(STATUS_OTHER)) {
+                log.info("{} | {}", String.format(STATUS_FORMAT, entry.getKey()), entry.getValue());
+            }
+        }
+    }
+
+    private long getAvg(List<Long> responsesMs) {
+        long avg = 0;
+        for (Long ms : responsesMs) {
+            avg += ms;
+        }
+        avg = avg / responsesMs.size();
+        return avg;
+    }
+
+    private long getPercentile(List<Long> responsesMs, double percentile) {
+        return responsesMs.get((int) Math.round(percentile / 100.0 * (responsesMs.size() - 1)));
+    }
+
+    private Map<String, Long> calculateStatuses(List<BenchData> benchData) {
+        Map<String, Long> result = new HashMap<>();
+        result.put(STATUS_2XX, 0L);
+        result.put(STATUS_OTHER, 0L);
+
+        for (BenchData data : benchData) {
+            for (Map.Entry<String, Long> entry : data.getStatuses().entrySet()) {
+                if (result.containsKey(entry.getKey())) {
+                    result.put(entry.getKey(), result.get(entry.getKey()) + entry.getValue());
+                } else {
+                    result.put(entry.getKey(), entry.getValue());
+                }
+
+                try {
+                    int status = Integer.parseInt(entry.getKey());
+                    if (status >= 200 && status < 300) {
+                        result.put(STATUS_2XX, result.get(STATUS_2XX) + entry.getValue());
+                    } else {
+                        result.put(STATUS_OTHER, result.get(STATUS_OTHER) + entry.getValue());
+                    }
+                } catch (Exception e) {
+                    result.put(STATUS_OTHER, result.get(STATUS_OTHER) + entry.getValue());
+                }
+            }
+        }
+        return result;
     }
 }
