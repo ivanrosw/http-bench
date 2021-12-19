@@ -26,6 +26,22 @@
             <artifactId>jcommander</artifactId>
             <version>1.81</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.32</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.32</version>
+        </dependency>
+
         <!--Package-->
         <dependency>
             <groupId>org.apache.maven.plugins</groupId>
@@ -41,6 +57,7 @@
             <type>maven-plugin</type>
             <scope>provided</scope>
         </dependency>
+
         <!--Sonar-->
         <dependency>
             <groupId>org.jacoco</groupId>

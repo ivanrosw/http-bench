@@ -1,6 +1,7 @@
 package io.github.ivanrosw.httpbench;
 
 import com.beust.jcommander.JCommander;
+import io.github.ivanrosw.httpbench.bench.HttpBench;
 import io.github.ivanrosw.httpbench.model.Arguments;
 
 public class HttpBenchMain {
@@ -15,6 +16,7 @@ public class HttpBenchMain {
             System.exit(0);
         }
 
-        System.out.println(arguments);
+        HttpBench httpBench = new HttpBench(arguments);
+        httpBench.execute();
     }
 }
