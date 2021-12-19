@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2021 Ivan Rosinskii
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.ivanrosw.httpbench.bench;
 
 import io.github.ivanrosw.httpbench.model.Arguments;
@@ -36,6 +51,11 @@ public class HttpBench {
         printBenchResult(benchData);
     }
 
+    /**
+     * Run bench
+     *
+     * @return  list with collections of responses ms and statuses counts
+     */
     private List<BenchData> runBench() {
         List<BenchData> result = new ArrayList<>(arguments.getThreads());
         ExecutorService executorService = Executors.newFixedThreadPool(arguments.getThreads());
@@ -71,6 +91,11 @@ public class HttpBench {
         return result;
     }
 
+    /**
+     * Convert {@link Arguments#getHeaders()} headers to {@link Header}
+     *
+     * @return  headers
+     */
     private Header[] createHeaders() {
         Header[] headers = null;
         if (arguments.getHeaders() != null && !arguments.getHeaders().isEmpty()) {
@@ -84,6 +109,11 @@ public class HttpBench {
         return headers;
     }
 
+    /**
+     * Create {@link RequestConfig} with custom timeout from {@link Arguments#getTimeout()}
+     *
+     * @return  config for requests
+     */
     private RequestConfig createRequestConfig() {
         return RequestConfig.custom()
                 .setConnectionRequestTimeout(arguments.getTimeout(), arguments.getTimeoutUnit())
@@ -92,6 +122,11 @@ public class HttpBench {
                 .build();
     }
 
+    /**
+     * Print result of bench
+     *
+     * @param benchData  result of bench
+     */
     private void printBenchResult(List<BenchData> benchData) {
         List<Long> responsesMs = new LinkedList<>();
         benchData.forEach(data -> responsesMs.addAll(data.getResponsesMs()));
@@ -129,6 +164,12 @@ public class HttpBench {
         }
     }
 
+    /**
+     * Calculate avg of responses ms
+     *
+     * @param responsesMs  all responses ms
+     * @return  avg
+     */
     private long getAvg(List<Long> responsesMs) {
         long avg = 0;
         for (Long ms : responsesMs) {
@@ -138,10 +179,24 @@ public class HttpBench {
         return avg;
     }
 
+    /**
+     * Get percentile from responses ms
+     *
+     * @param responsesMs  sorted responses ms
+     * @param percentile   percentile
+     * @return             percentile ms
+     */
     private long getPercentile(List<Long> responsesMs, double percentile) {
         return responsesMs.get((int) Math.round(percentile / 100.0 * (responsesMs.size() - 1)));
     }
 
+    /**
+     * Calculate statuses 2xx and other
+     * Collect all statuses from result to one collection
+     *
+     * @param benchData  result of bench
+     * @return           all statuses from result and 2xx, other
+     */
     private Map<String, Long> calculateStatuses(List<BenchData> benchData) {
         Map<String, Long> result = new HashMap<>();
         result.put(STATUS_2XX, 0L);
