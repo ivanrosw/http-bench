@@ -2,7 +2,7 @@
 
 Benchmark for services
 
-Returns percentile of responses
+Returns percentile of responses time
 
 ### Getting started
 
